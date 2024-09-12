@@ -1,0 +1,59 @@
+library(tidyr)
+library(dplyr)
+library(plotly)
+
+# Load Airtable data on GiveWell grants:
+# https://airtable.com/appGuFtOIb1eodoBu/shr1EzngorAlEzziP/tblG72bMUu36lrWsr/viwJScgH8B6uRwJ8C
+df <- read.csv("C:/Users/brend/Downloads/Grants-Grid view.csv") %>%
+  mutate(Date = as.Date(Date, "%Y-%m-%d")) %>% 
+  filter(Date >= "2021-01-01") %>% 
+  mutate(Amount = as.numeric(gsub("[^0-9.]", "", Amount)))
+
+# Split countries then convert to long format
+df_long <- df %>%
+  separate_rows(Countries, sep = ",") %>%
+  mutate(Countries = trimws(Countries)) %>%
+  filter(Countries != "") %>%
+  rename(Country = Countries)
+
+# Aggregate data by country
+df_agg <- df_long %>%
+  group_by(Country) %>%
+  summarise(
+    TotalAmount = sum(Amount),
+    Grants = paste(unique(Grant), collapse = "<br>"),
+    Funders = paste(unique(Funder), collapse = "<br>"),
+    Topics = paste(unique(Topics), collapse = "<br>"),
+    Recipients = paste(unique(Recipient), collapse = "<br>")
+  )
+
+# Create the map
+map <- plot_geo(df_agg) %>%
+  add_trace(
+    z = ~TotalAmount, 
+    locations = ~Country, 
+    locationmode = "country names",
+    color = ~TotalAmount,
+    colorscale = "Viridis",
+    text = ~paste(
+      "Country: ", Country, "<br>",
+      "Total Amount: $", formatC(TotalAmount, format="f", digits=0, big.mark=","), "<br>",
+      "Grants: ", Grants, "<br>",
+      "Funders: ", Funders, "<br>",
+      "Topics: ", Topics, "<br>",
+      "Recipients: ", Recipients
+    ),
+    hoverinfo = "text"
+  ) %>%
+  colorbar(title = "Total Grant Amount") %>%
+  layout(
+    title = "Total Grant Amounts by Country",
+    geo = list(
+      showframe = FALSE,
+      showcoastlines = TRUE,
+      projection = list(type = "mercator")
+    )
+  )
+
+# Display the map
+map
