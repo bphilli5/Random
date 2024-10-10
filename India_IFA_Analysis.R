@@ -40,6 +40,7 @@ combined_df <- do.call(rbind, data_list)
 # Reset row names
 rownames(combined_df) <- NULL
 
+# Create numeric time variable
 combined_df <- combined_df %>%
   mutate(
     year = as.numeric(year),
@@ -50,6 +51,7 @@ combined_df <- combined_df %>%
       quarter == "Q4" ~ year + 3/4,
       TRUE ~ NA_real_
     )
+    # Rename columns
   ) %>% rename(
     "IFA Syrup" = names(combined_df)[2],
     "Pink IFA Tablets" = names(combined_df)[3],
@@ -59,7 +61,7 @@ combined_df <- combined_df %>%
   mutate(numeric_time = numeric_time - min(numeric_time, na.rm = TRUE) + 1) %>% 
   select(Location, `IFA Syrup`, `Pink IFA Tablets`, `Blue IFA Tablets`, year, quarter, numeric_time)
 
-# Assuming your data is in a dataframe called 'df'
+# create summary table
 
 summary_table <- combined_df %>%
   group_by(Location) %>%
@@ -102,8 +104,8 @@ final_summary <- summary_table %>%
     `Trend_Blue IFA Tablets`
   )
 
-# Save combined_df to a CSV file
+# Save combined_df to csv
 write.csv(combined_df, file = "combined_data.csv", row.names = FALSE)
 
-# Save final_summary to a CSV file
+# Save final_summary to csv
 write.csv(final_summary, file = "final_summary.csv", row.names = FALSE)
